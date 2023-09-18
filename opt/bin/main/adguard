@@ -32,7 +32,7 @@ adguard_ipset_list_update(){
 	! [ -f "${host_list}" ] && touch "${host_list}"
 	# если списочный файл пуст, то создаем пустой ipset блок
 	[ "$(cat < "${host_list}" | wc -l )" = 0 ] && ipset="[]"
-	sed -i '/ipset/,/tls/{//!d};' "${adguard_config}"
+	sed -i '/ipset/,/ipset_file/{//!d};' "${adguard_config}" #fix https://github.com/qzeleza/kvas/issues/40
 
 	# В случае наличия списочного файла читаем из него строки
 	while read -r line || [ -n "${line}" ]; do
@@ -61,7 +61,7 @@ adguard_ipset_list_update(){
 #	в случае наличия данных в переменной ipset меняем ее файле.
 	if [ -n "${ipset}" ]; then
 		#	записываем подготовленный блок ipset в файл конфигурации AdGuardHome
-		sed -i "s/\(.*\)\(^tls:.*\)/\1  ipset: ${ipset}\n\2/" "${adguard_config}"
+		sed -i "s/\(.*\)\(^  ipset_file:.*\)/\1  ipset: ${ipset}\n\2/" "${adguard_config}" #fix https://github.com/qzeleza/kvas/issues/40
 	fi
 
 }
