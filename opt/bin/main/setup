@@ -106,9 +106,9 @@ setup_restore_prev_conf(){
 restore_adguard(){
 
 	ready "Восстанавливаем службу AdGuardHome"
-	if [ -f "${KVAS_BACKUP_PATH}/S99adguardhome.orign" ]; then
+	if [ -f "${KVAS_BACKUP_PATH}/S99adguardhome.origin" ]; then
 
-		cp "${KVAS_BACKUP_PATH}/S99adguardhome.orign" /opt/etc/init.d/S99adguardhome
+		cp "${KVAS_BACKUP_PATH}/S99adguardhome.origin" /opt/etc/init.d/S99adguardhome
 		cp /opt/etc/AdGuardHome/AdGuardHome.yaml /opt/bin/AdGuardHome.yaml
 	fi
 
@@ -245,6 +245,10 @@ cmd_install(){
 	# Пишем сообщение в лог роутера о начале установки пакета
 	log_alert "УСТАНОВКА ПАКЕТА КВАС" "${LOG_HEADER}"
 
+#	обновляем itpables
+	opkg update &> /dev/null
+	opkg install iptables &> /dev/null
+
 	setup_print_welcome
 	mkdir -p "${KVAS_BACKUP_PATH}"
 	cat /dev/null > "${INSTALL_LOG}"
@@ -252,6 +256,8 @@ cmd_install(){
 	ln -sf /opt/apps/kvas/bin/main/ipset /opt/etc/cron.5mins/ipset.kvas
 
 	setup_test_provider_dns
+
+	chmod +x "${KVAS_START_FILE}"
 
 	#------------------------------------------------------
 	# Отключаем IPv6
@@ -359,19 +365,22 @@ cmd_uninstall() {
 	echo -e "Удаление пакета ${GREEN}КВАС™${NOCL} версия ${GREEN}${NOCL}..."
 	print_line
 
+	answer=''; read_ynq "Вы уверены в удалении пакета [Y/N]?" answer
+	if [ "${answer}" = y ]; then
 
-	[ -z "${rm_type}" ] && mess="Удаляем все архивные данные, зависимые пакеты оставляем."
-	if [ "${rm_type}" = full ]; then
-		mess="Удаляем все архивные данные и все зависимые пакеты."
-	 	auto='--autoremove'
-		rm -f /opt/etc/init/K56dnsmasq  /opt/etc/init/K09dnscrypt-proxy2
+		[ -z "${rm_type}" ] && mess="Удаляем все архивные данные, зависимые пакеты оставляем."
+		if [ "${rm_type}" = full ]; then
+			mess="Удаляем все архивные данные и все зависимые пакеты."
+			auto='--autoremove'
+			rm -f /opt/etc/init/K56dnsmasq  /opt/etc/init/K09dnscrypt-proxy2
+		fi
+
+		echo "${mess}"
+		print_line
+		opkg remove kvas "${auto}"
+		print_line
+		set_previous_condition "${rm_type}"
+		print_line
+		echo "Удаление КВАСа завершено."
 	fi
-
-	echo "${mess}"
-	print_line
-	opkg remove kvas "${auto}"
-	print_line
-	set_previous_condition "${rm_type}"
-	print_line
-	echo "Удаление КВАСа завершено."
 }
