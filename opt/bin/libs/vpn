@@ -360,7 +360,7 @@ adguardhome_setup() {
 #
 # ------------------------------------------------------------------------------------------
 get_adguardhome_ip_port() {
-	dns_ip="$(cat < "${ADGUARDHOME_CONFIG}" | grep '^bind_host: ' | cut -d':' -f2 | tr -d ' \n')"
+	dns_ip=$(cat "${ADGUARDHOME_CONFIG}" | grep -A1 "'bind_hosts':" | grep -o "[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+" | tr -d ' \n')
 	echo "${dns_ip}" | grep -q '0.0.0.0' && dns_ip=$(get_router_ip)
 	echo "${dns_ip}#${MAIN_DNS_PORT}"
 }
@@ -406,7 +406,9 @@ adguardhome_check_config() {
 			cp "${KVAS_BACKUP_PATH}"/AdGuardHome.yaml /opt/etc/AdGuardHome/AdGuardHome.yaml
 			"${ADGUARDHOME_DEMON}" restart  &> /dev/null
 			ip=$(get_router_ip)
-			port=$(cat < "${ADGUARDHOME_CONFIG}" | grep '^bind_port: ' | cut -d':' -f2 | tr -d ' \n')
+			# port=$(cat < "${ADGUARDHOME_CONFIG}" | grep '^bind_port: ' | cut -d':' -f2 | tr -d ' \n')
+			port=$(awk '/^dns:/{f=1} f && /^  port: /{print $2; exit}' "${ADGUARDHOME_CONFIG}")
+
 			echo -e "Был обнаружен и восстановлен архивный файл конфигурации AdGuard Home."
 			echo -e "Панель управления находится по адресу: ${BLUE}http://${ip}:${port}${NOCL}"
 			print_line
@@ -456,7 +458,9 @@ adguardhome_install_locally() {
 		cmd_adguard_update
 		adguardhome_check_config
 		ip=$(get_router_ip)
-		port=$(cat < "${ADGUARDHOME_CONFIG}" | grep '^bind_port: ' | cut -d':' -f2 | tr -d ' \n')
+		# port=$(cat < "${ADGUARDHOME_CONFIG}" | grep '^bind_port: ' | cut -d':' -f2 | tr -d ' \n')
+		port=$(awk '/^dns:/{f=1} f && /^  port: /{print $2; exit}' "${ADGUARDHOME_CONFIG}")
+
 		adguardhome_setup
 	fi
 }
