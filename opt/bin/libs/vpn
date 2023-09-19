@@ -407,7 +407,7 @@ adguardhome_check_config() {
 			"${ADGUARDHOME_DEMON}" restart  &> /dev/null
 			ip=$(get_router_ip)
 			# port=$(cat < "${ADGUARDHOME_CONFIG}" | grep '^bind_port: ' | cut -d':' -f2 | tr -d ' \n')
-			port=$(awk '/^dns:/{f=1} f && /^  port: /{print $2; exit}' "${ADGUARDHOME_CONFIG}")
+			port=$(grep "'address':" "${ADGUARDHOME_CONFIG}" | cut -d':' -f3 | cut -d' ' -f2 | tr -d "'")
 
 			echo -e "Был обнаружен и восстановлен архивный файл конфигурации AdGuard Home."
 			echo -e "Панель управления находится по адресу: ${BLUE}http://${ip}:${port}${NOCL}"
