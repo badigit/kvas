@@ -283,7 +283,7 @@ ipv6_inface_status() {
 # ------------------------------------------------------------------------------------------
 adguardhome_change_and_get_config_ip() {
 	ip_filter="[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}"
-	ip_dns_adguard=$(cat < "${ADGUARDHOME_CONFIG}" | sed -n '/^dns/,/port:/p' | grep -o "${ip_filter}")
+	ip_dns_adguard=$(cat < "${ADGUARDHOME_CONFIG}" | sed -n '/^dns/,/port:/p' | grep -o "${ip_filter}") #fix
 #	Если DNS порт установлен в значение 0.0.0.0 (все адреса), то меняем его на ip роутера
 	if [ "${ip_dns_adguard}" = '0.0.0.0' ] ; then
 		ip_dns_adguard=$(get_router_ip)
@@ -319,8 +319,10 @@ adguardhome_setup() {
 	${ADGUARDHOME_DEMON} stop &> /dev/null
 #	устанавливаем DNS по умолчанию на ADGUARD
 	set_config_value DNS_DEFAULT "${ip}#${port}"
-#	меняем номер порта в файле конфигурации adguard
-	sed -i "s/\( port:\) .*/\1 ${port}/" "${ADGUARDHOME_CONFIG}"
+#	меняем номер порта в файле конфигурации adguard 
+	# sed -i "s/\( port:\) .*/\1 ${port}/" "${ADGUARDHOME_CONFIG}"
+	sed -i '/dns:/,/port:/s/\(port: \).*/\1'"${port}"'/' "${ADGUARDHOME_CONFIG}" #fix
+
 #	если файл сервис adguard в наличии то архивируем файл конфигурации
 	if [ -f "${ADGUARDHOME_DEMON}" ]; then
 		cp /opt/etc/AdGuardHome/AdGuardHome.yaml "${KVAS_BACKUP_PATH}"/AdGuardHome.yaml
@@ -360,7 +362,7 @@ adguardhome_setup() {
 #
 # ------------------------------------------------------------------------------------------
 get_adguardhome_ip_port() {
-	dns_ip=$(cat "${ADGUARDHOME_CONFIG}" | grep -A1 "'bind_hosts':" | grep -o "[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+" | tr -d ' \n')
+	dns_ip=$(cat "${ADGUARDHOME_CONFIG}" | grep -A1 'bind_hosts:' | grep -o "[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+" | tr -d ' \n')
 	echo "${dns_ip}" | grep -q '0.0.0.0' && dns_ip=$(get_router_ip)
 	echo "${dns_ip}#${MAIN_DNS_PORT}"
 }
@@ -407,8 +409,8 @@ adguardhome_check_config() {
 			"${ADGUARDHOME_DEMON}" restart  &> /dev/null
 			ip=$(get_router_ip)
 			# port=$(cat < "${ADGUARDHOME_CONFIG}" | grep '^bind_port: ' | cut -d':' -f2 | tr -d ' \n')
-			port=$(grep "'address':" "${ADGUARDHOME_CONFIG}" | cut -d':' -f3 | cut -d' ' -f2 | tr -d "'")
-
+			port=$(grep "address:" "${ADGUARDHOME_CONFIG}" | cut -d':' -f3 | tr -d ' ')
+			echo -e "Порт: ${port}"
 			echo -e "Был обнаружен и восстановлен архивный файл конфигурации AdGuard Home."
 			echo -e "Панель управления находится по адресу: ${BLUE}http://${ip}:${port}${NOCL}"
 			print_line
