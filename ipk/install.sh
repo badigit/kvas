@@ -1,3 +1,4 @@
+#!/bin/sh
 
 last_package_ver=$(curl -s https://github.com/qzeleza/kvas/releases | grep "Версия" | head -1| sed -n 's/.*Версия\(.*\)<\/h.*/\1/p' | tr -d ' ')
 file_name=kvas_${last_package_ver}_all.ipk
